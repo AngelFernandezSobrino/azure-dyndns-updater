@@ -4,6 +4,7 @@
   "description": "NodeJS script to update Azure DNS records with your current public IP address in the desired record.",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
