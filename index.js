@@ -1,30 +1,27 @@
-require('dotenv').config();
+import * as dotenv from 'dotenv';
+dotenv.config();
 
-const { DnsManagementClient } = require("@azure/arm-dns");
-const { DefaultAzureCredential } = require("@azure/identity");
+import * as fs from 'fs';
+import util from 'util';
+import process from 'process';
 
-const util = require('util');
-const exec = util.promisify(require('child_process').exec);
+import { DnsManagementClient } from '@azure/arm-dns';
+import { DefaultAzureCredential } from '@azure/identity';
 
-
-async function getPublicIP() {
-    const { stdout, stderr } = await exec("nslookup myip.opendns.com resolver1.opendns.com");
-    // From the string in stdout, extract the fifth line splitting by end of line, and then extract the IP address from that line.
-    const ip = stdout.split("\n")[4].split(" ")[2].split("\r")[0];
-    return ip;
-}
+import { publicIpv4 } from 'public-ip';
 
 (async () => {
-    let ipAddress;
-    try {
-        ipAddress = await getPublicIP();
-    } catch (err) {
-        console.log('Error', err);
-    }
+
+    const ipAddress = await publicIpv4({
+        fallbackUrls: [
+            'https://ifconfig.co/ip',
+            'https://api.ipify.org',
+        ],
+        onlyHttps: true
+    });
 
     // Check if the file ip.txt exists using async/await
-    const fs = require('fs');
-    const util = require('util');
+    
     const readFile = util.promisify(fs.readFile);
 
     let ipFile;
@@ -35,7 +32,7 @@ async function getPublicIP() {
     }
 
     if (ipFile === ipAddress) {
-        console.log("IP address is the same, no need to update it.");
+        console.log('IP address is the same, no need to update it.');
         return;
     }
 
@@ -61,23 +58,23 @@ async function getPublicIP() {
  * x-ms-original-file: specification/dns/resource-manager/Microsoft.Network/stable/2018-05-01/examples/CreateOrUpdateARecordset.json
  */
 async function createARecordset(ip) {
-  const subscriptionId = process.env.SUBSCRIPTION_ID;
-  const resourceGroupName = process.env.RESOURCE_GROUP_NAME;
-  const zoneName = process.env.ZONE_NAME;
-  const relativeRecordSetName = process.env.RELATIVE_RECORD_SET_NAME;
-  const recordType = "A";
-  const parameters = {
-    aRecords: [{ ipv4Address: ip }],
-    ttl: 3600,
-  };
-  const credential = new DefaultAzureCredential();
-  const client = new DnsManagementClient(credential, subscriptionId);
-  const result = await client.recordSets.createOrUpdate(
-    resourceGroupName,
-    zoneName,
-    relativeRecordSetName,
-    recordType,
-    parameters
-  );
-  console.log(result);
+    const subscriptionId = process.env.SUBSCRIPTION_ID;
+    const resourceGroupName = process.env.RESOURCE_GROUP_NAME;
+    const zoneName = process.env.ZONE_NAME;
+    const relativeRecordSetName = process.env.RELATIVE_RECORD_SET_NAME;
+    const recordType = 'A';
+    const parameters = {
+        aRecords: [{ ipv4Address: ip }],
+        ttl: 3600,
+    };
+    const credential = new DefaultAzureCredential();
+    const client = new DnsManagementClient(credential, subscriptionId);
+    const result = await client.recordSets.createOrUpdate(
+        resourceGroupName,
+        zoneName,
+        relativeRecordSetName,
+        recordType,
+        parameters
+    );
+    console.log(result);
 }

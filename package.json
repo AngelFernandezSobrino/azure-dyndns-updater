@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "NodeJS script to update Azure DNS records with your current public IP address in the desired record.",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -12,6 +13,10 @@
   "dependencies": {
     "@azure/arm-dns": "^5.1.0",
     "@azure/identity": "^3.1.2",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "public-ip": "^6.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.32.0"
   }
 }
