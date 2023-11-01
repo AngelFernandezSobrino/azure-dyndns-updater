@@ -1,6 +1,8 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
+import nslookup from 'nslookup';
+
 import * as fs from 'fs';
 import util from 'util';
 import process from 'process';
@@ -12,85 +14,83 @@ import { publicIpv4 } from 'public-ip';
 
 (async () => {
 
-    const ipAddress = await publicIpv4({
-        fallbackUrls: [
-            'https://ifconfig.co/ip',
-            'https://api.ipify.org',
-        ],
-        onlyHttps: true
-    });
+  const ipAddress = await publicIpv4({
+    fallbackUrls: [
+      'https://ifconfig.co/ip',
+      'https://api.ipify.org',
+    ],
+    onlyHttps: true
+  });
 
-    // Check if the file ip.txt exists using async/await
-    
-    const readFile = util.promisify(fs.readFile);
+  // Check if the file ip.txt exists using async/await
 
-    let ipFile;
+  const readFile = util.promisify(fs.readFile);
+
+  let ipFile;
+  try {
+    ipFile = await readFile('./ip.txt', 'utf8');
+  } catch (err) {
+    //console.log('Error', err);
+  }
+
+  if (ipFile === ipAddress) {
+    //console.log('IP address is the same, no need to update it.');
+
+    // Here we need to check if the 
+    //
+    //console.log('Check that ip address on server is correct')
     try {
-        ipFile = await readFile('./ip.txt', 'utf8');
-    } catch (err) {
-        console.log('Error', err);
-    }
+      const authoritativeNameServers = await new Promise((resolve, reject) => {
+        nslookup(process.env.ZONE_NAME).type('ns').end((err, data) => {
+          //console.log(data);
+          if (err) reject(err);
+          else resolve(data);
+        })
+      })
 
-    if (ipFile === ipAddress) {
-        console.log('IP address is the same, no need to update it.');
+      const authoritativeNameServerAddress = await new Promise((resolve, reject) => {
+        nslookup(authoritativeNameServers[0]).type('a').end((err, data) => {
+          //console.log(data);
+          if (err) reject(err);
+          else resolve(data);
+        })
+      })
+
+      const hostAddressOnAuthoritativeServer = await new Promise((resolve, reject) => {
         
-	    // Here we need to check if the 
-	    //
-	console.log('Check that ip address on server is correct')
-	    try {
-	const authoritativeNameServers = await new Promise((resolve, reject) => {
-		nslookup(process.env.ZONE_NAME).type('ns').end((err, data) => {
-			console.log(data);
-			if (err) reject(err);
-			else resolve(data);
-		}
-	}
+        nslookup(`${process.env.RELATIVE_RECORD_SET_NAME}.${process.env.ZONE_NAME}`).server(authoritativeNameServerAddress[0]).end((err, data) => {
+          //console.log(data);
+          if (err) reject(err);
+          else resolve(data);
+        })
+      })
 
-		const authoritativeNameServerAddress = await new Promise((resolve, reject) => {
-			nslookup(authoritativeNameServers[0]).type('a').end((err, data) => {
-				console.log(data);
-				if (err) reject(err);
-				else resolve(data);
-			}
-		}
+      if (hostAddressOnAuthoritativeServer[0] === ipAddress) {
+        //console.log('IP updated on server');
+        return;
+      } else {
+        //console.log('IP not updated, trying to update');
+      }
 
-	const hostAddressOnAuthoritativeServer = await new Promise((resolve, reject) => {
-		nslookup(authoritativeNameServerAddress[0]).end((err, data) => {
-			console.log(addrs);
-			if (err) reject(err);
-			else resolve(data);
-		}
-	}
-
-		if (hostAddressOnAuthoritativeServer[0] === ipAddress) {
-			console.log('IP updated on server');
-			return;
-		} else {
-			console.log('IP not updated, trying to update');
-		}
-
-	    } catch(err) {
-		    console.log(err);
-	    }
-
-	    
-	    
-	return;
-    }
-
-    // Write the IP address to the ip.txt file
-    const writeFile = util.promisify(fs.writeFile);
-    try {
-        await writeFile('./ip.txt', ipAddress);
     } catch (err) {
-        console.log('Error', err);
+      //console.log(err);
     }
 
-    try {
-        await createARecordset(ipAddress);
-    } catch (err) {
-        console.log('Error', err);
-    }
+  }
+
+  // Write the IP address to the ip.txt file
+  const writeFile = util.promisify(fs.writeFile);
+  try {
+    await writeFile('./ip.txt', ipAddress);
+  } catch (err) {
+    //console.log('Error', err);
+  }
+
+  try {
+    await createARecordset(ipAddress);
+  } catch (err) {
+    //console.log('Error', err);
+  }
 })();
 
 /**
@@ -100,23 +100,23 @@ import { publicIpv4 } from 'public-ip';
  * x-ms-original-file: specification/dns/resource-manager/Microsoft.Network/stable/2018-05-01/examples/CreateOrUpdateARecordset.json
  */
 async function createARecordset(ip) {
-    const subscriptionId = process.env.SUBSCRIPTION_ID;
-    const resourceGroupName = process.env.RESOURCE_GROUP_NAME;
-    const zoneName = process.env.ZONE_NAME;
-    const relativeRecordSetName = process.env.RELATIVE_RECORD_SET_NAME;
-    const recordType = 'A';
-    const parameters = {
-        aRecords: [{ ipv4Address: ip }],
-        ttl: 3600,
-    };
-    const credential = new DefaultAzureCredential();
-    const client = new DnsManagementClient(credential, subscriptionId);
-    const result = await client.recordSets.createOrUpdate(
-        resourceGroupName,
-        zoneName,
-        relativeRecordSetName,
-        recordType,
-        parameters
-    );
-    console.log(result);
+  const subscriptionId = process.env.SUBSCRIPTION_ID;
+  const resourceGroupName = process.env.RESOURCE_GROUP_NAME;
+  const zoneName = process.env.ZONE_NAME;
+  const relativeRecordSetName = process.env.RELATIVE_RECORD_SET_NAME;
+  const recordType = 'A';
+  const parameters = {
+    aRecords: [{ ipv4Address: ip }],
+    ttl: 3600,
+  };
+  const credential = new DefaultAzureCredential();
+  const client = new DnsManagementClient(credential, subscriptionId);
+  const result = await client.recordSets.createOrUpdate(
+    resourceGroupName,
+    zoneName,
+    relativeRecordSetName,
+    recordType,
+    parameters
+  );
+  //console.log(result);
 }
