@@ -33,7 +33,49 @@ import { publicIpv4 } from 'public-ip';
 
     if (ipFile === ipAddress) {
         console.log('IP address is the same, no need to update it.');
-        return;
+        
+	    // Here we need to check if the 
+	    //
+	console.log('Check that ip address on server is correct')
+	    try {
+	const authoritativeNameServers = await new Promise((resolve, reject) => {
+		nslookup(process.env.ZONE_NAME).type('ns').end((err, data) => {
+			console.log(data);
+			if (err) reject(err);
+			else resolve(data);
+		}
+	}
+
+		const authoritativeNameServerAddress = await new Promise((resolve, reject) => {
+			nslookup(authoritativeNameServers[0]).type('a').end((err, data) => {
+				console.log(data);
+				if (err) reject(err);
+				else resolve(data);
+			}
+		}
+
+	const hostAddressOnAuthoritativeServer = await new Promise((resolve, reject) => {
+		nslookup(authoritativeNameServerAddress[0]).end((err, data) => {
+			console.log(addrs);
+			if (err) reject(err);
+			else resolve(data);
+		}
+	}
+
+		if (hostAddressOnAuthoritativeServer[0] === ipAddress) {
+			console.log('IP updated on server');
+			return;
+		} else {
+			console.log('IP not updated, trying to update');
+		}
+
+	    } catch(err) {
+		    console.log(err);
+	    }
+
+	    
+	    
+	return;
     }
 
     // Write the IP address to the ip.txt file
