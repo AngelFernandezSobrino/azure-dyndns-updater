@@ -20,6 +20,16 @@ Automated record updater for Azure DNS zones. It creates a record for the curren
     - ZONE_NAME
     - RELATIVE_RECORD_SET_NAME
 
+-   It also need a valid DefaultCredentials authentication methods. Usually that can be achieved by app registry and environmental variables, follow the instruction below:
+
+    - Register and get credentials for app [Azure tutorial to app registry](https://learn.microsoft.com/en-us/azure/developer/javascript/sdk/authentication/on-premises-apps?tabs=azure-portal), more info about default credentials [Azure JS SDK](https://learn.microsoft.com/en-us/azure/developer/javascript/sdk/authentication/overview)
+    -   Add the following environment variables to the .env file:
+
+        - AZURE_SUBSCRIPTION_ID
+        - AZURE_TENANT_ID
+        - AZURE_CLIENT_ID
+        - AZURE_CLIENT_SECRET
+
 -   Run `npm start` to run the script and check the behavior
 
 ### Deployment

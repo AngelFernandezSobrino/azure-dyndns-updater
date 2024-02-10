@@ -38,11 +38,11 @@ import { publicIpv4 } from 'public-ip';
 
     // Here we need to check if the 
     //
-    //console.log('Check that ip address on server is correct')
+    // console.log('Check that ip address on server is correct')
     try {
       const authoritativeNameServers = await new Promise((resolve, reject) => {
         nslookup(process.env.ZONE_NAME).type('ns').end((err, data) => {
-          //console.log(data);
+          // console.log(data);
           if (err) reject(err);
           else resolve(data);
         })
@@ -50,7 +50,7 @@ import { publicIpv4 } from 'public-ip';
 
       const authoritativeNameServerAddress = await new Promise((resolve, reject) => {
         nslookup(authoritativeNameServers[0]).type('a').end((err, data) => {
-          //console.log(data);
+          // console.log(data);
           if (err) reject(err);
           else resolve(data);
         })
@@ -59,17 +59,17 @@ import { publicIpv4 } from 'public-ip';
       const hostAddressOnAuthoritativeServer = await new Promise((resolve, reject) => {
         
         nslookup(`${process.env.RELATIVE_RECORD_SET_NAME}.${process.env.ZONE_NAME}`).server(authoritativeNameServerAddress[0]).end((err, data) => {
-          //console.log(data);
+          // console.log(data);
           if (err) reject(err);
           else resolve(data);
         })
       })
 
       if (hostAddressOnAuthoritativeServer[0] === ipAddress) {
-        //console.log('IP updated on server');
+        console.log('IP updated on server');
         return;
       } else {
-        //console.log('IP not updated, trying to update');
+        console.log('IP not updated, trying to update');
       }
 
     } catch (err) {
@@ -100,23 +100,29 @@ import { publicIpv4 } from 'public-ip';
  * x-ms-original-file: specification/dns/resource-manager/Microsoft.Network/stable/2018-05-01/examples/CreateOrUpdateARecordset.json
  */
 async function createARecordset(ip) {
-  const subscriptionId = process.env.SUBSCRIPTION_ID;
+  console.log('Creating record set');
+	const subscriptionId = process.env.SUBSCRIPTION_ID;
   const resourceGroupName = process.env.RESOURCE_GROUP_NAME;
   const zoneName = process.env.ZONE_NAME;
   const relativeRecordSetName = process.env.RELATIVE_RECORD_SET_NAME;
   const recordType = 'A';
   const parameters = {
     aRecords: [{ ipv4Address: ip }],
-    ttl: 3600,
+    ttl: 300,
   };
   const credential = new DefaultAzureCredential();
   const client = new DnsManagementClient(credential, subscriptionId);
-  const result = await client.recordSets.createOrUpdate(
+  // console.log(client);x  
+  try {
+	const result = await client.recordSets.createOrUpdate(
     resourceGroupName,
     zoneName,
     relativeRecordSetName,
     recordType,
     parameters
   );
-  //console.log(result);
+	  console.log(result);
+  } catch (e) {
+	console.log(e);
+  }
 }
